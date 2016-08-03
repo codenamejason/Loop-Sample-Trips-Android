@@ -5,6 +5,7 @@ import android.accounts.AccountManager;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Typeface;
+import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.provider.Settings;
@@ -24,8 +25,9 @@ import ms.loop.loopsdk.core.LoopSDK;
 import ms.loop.loopsdk.processors.DriveProcessor;
 import ms.loop.loopsdk.processors.KnownLocationProcessor;
 import ms.loop.loopsdk.processors.TripProcessor;
+import ms.loop.loopsdk.processors.TripProcessor2;
 import ms.loop.loopsdk.profile.KnownLocation;
-import ms.loop.loopsdk.providers.LoopLocation;
+import ms.loop.loopsdk.providers.LoopFusedLocationProvider;
 import ms.loop.loopsdk.providers.LoopLocationProvider;
 import ms.loop.loopsdk.signal.Signal;
 import ms.loop.loopsdk.signal.SignalConfig;
@@ -44,6 +46,7 @@ public class SampleAppApplication extends MultiDexApplication implements ILoopSD
     public static TripProcessor tripProcessor;
     public static DriveProcessor driveProcessor;
     public static MixpanelAPI mixpanel;
+    private TripProcessor2 tripProcessor2;
 
     @Override
     public void onCreate() {
@@ -78,17 +81,22 @@ public class SampleAppApplication extends MultiDexApplication implements ILoopSD
 
         // start any required Providers
         LoopLocationProvider.start(SignalConfig.SIGNAL_SEND_MODE_BATCH);
+        LoopFusedLocationProvider.start(SignalConfig.SIGNAL_SEND_MODE_BATCH);
+
 
         if (!sdkInitialized) {
 
             tripProcessor = new TripProcessor();
             driveProcessor = new DriveProcessor();
             knownLocationProcessor = new KnownLocationProcessor();
+            tripProcessor2 = new TripProcessor2();
+
 
             // initialize signal processors
             tripProcessor.initialize();
             driveProcessor.initialize();
             knownLocationProcessor.initialize();
+            tripProcessor2.initialize();
 
             sdkInitialized = true;
 
@@ -100,11 +108,11 @@ public class SampleAppApplication extends MultiDexApplication implements ILoopSD
 
             LoopLocationProvider.registerCallback("location", new LoopLocationProvider.ILocationProviderCallback() {
                 @Override
-                public void onLocationChanged(LoopLocation location) {
+                public void onLocationChanged(Location location) {
                 }
 
                 @Override
-                public void onModeChanged(int modeFrom, int modeTo, LoopLocation location) {}
+                public void onModeChanged(int modeFrom, int modeTo, Location location) {}
                 @Override
                 public void onKnownLocationEntered(KnownLocation location) {}
                 @Override

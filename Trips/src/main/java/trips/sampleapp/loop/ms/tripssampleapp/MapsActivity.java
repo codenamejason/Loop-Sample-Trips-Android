@@ -30,6 +30,8 @@ import com.google.android.gms.maps.model.PolylineOptions;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -39,7 +41,9 @@ import ms.loop.loopsdk.profile.Drives;
 import ms.loop.loopsdk.profile.GeospatialPoint;
 import ms.loop.loopsdk.profile.Path;
 import ms.loop.loopsdk.profile.Trip;
+import ms.loop.loopsdk.profile.Trip2;
 import ms.loop.loopsdk.profile.Trips;
+import ms.loop.loopsdk.profile.Trips2;
 import trips.sampleapp.loop.ms.tripssampleapp.utils.TripView;
 import trips.sampleapp.loop.ms.tripssampleapp.utils.ViewUtils;
 
@@ -49,6 +53,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private String entityId;
     private Trips trips;
     private Drives drives;
+    private Trips2 trips2;
     Trip trip;
     TripView tripView;
     private ImageView backAction;
@@ -68,6 +73,9 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         entityId = this.getIntent().getExtras().getString("tripid");
         trips = Trips.createAndLoad(Trips.class, Trip.class);
+
+        trips2 = Trips2.createAndLoad(Trips2.class, Trip2.class);
+
         drives = Drives.createAndLoad(Drives.class, Drive.class);
 
         final ViewGroup viewGroup = (ViewGroup) ((ViewGroup) this
@@ -143,6 +151,8 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     public void drawPath() {
 
+        Collection<Trip2> trip2Collection = trips2.byDate(new Date(trip.startedAt.getTime() - 1000 * 60 * 2), new Date(trip.endedAt.getTime() - 1000 * 60 * 2));
+
         tripView.update(this, trip);
 
         GeospatialPoint firstPoint = trip.path.points.get(0);
@@ -181,5 +191,47 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         mMap.addMarker(endMarker);
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 12));
 
+        for (Trip2 trip2: trip2Collection){
+
+           firstPoint = trip2.path.points.get(0);
+
+            options = new PolylineOptions()
+                    .add(new LatLng(firstPoint.latDegrees,firstPoint.longDegrees))
+                    .width(10)
+                    .color(Color.GREEN)
+                    .geodesic(true).clickable(true);
+
+            startMarker = new MarkerOptions();
+            startMarker.position(new LatLng(firstPoint.latDegrees,firstPoint.longDegrees)).title("Trip starts");
+            startMarker.icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_trip_start));
+
+
+            mMap.addMarker(startMarker);
+            latLng = new LatLng(firstPoint.latDegrees, firstPoint.longDegrees);
+            long time = firstPoint.timeAt;
+            for (GeospatialPoint point: trip2.path.points)
+            {
+                if (point.timeAt<time)continue;
+                latLng = new LatLng(point.latDegrees,point.longDegrees);
+                mMap.addCircle(new CircleOptions()
+                        .center(latLng)
+                        .radius(20)
+                        .strokeColor(Color.YELLOW)
+                        .fillColor(Color.YELLOW));
+
+                options.add(latLng);
+                time = point.timeAt;
+            }
+
+            mMap.addPolyline(options);
+
+            endMarker = new MarkerOptions();
+            endMarker.position(latLng).title("Trip ends");
+            endMarker.icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_trip_end));
+
+            mMap.addMarker(endMarker);
+
+        }
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 12));
     }
 }
